@@ -1,11 +1,22 @@
 import { NextResponse } from "next/server";
+import { ensureCoreSchema, hasDatabase } from "@/lib/db";
 
 export async function GET() {
+  let database = false;
+  if (hasDatabase()) {
+    try {
+      await ensureCoreSchema();
+      database = true;
+    } catch {
+      database = false;
+    }
+  }
+
   return NextResponse.json({
     status: "ok",
-    demoMode: !process.env.DATABASE_URL,
+    demoMode: !database,
     integrations: {
-      database: Boolean(process.env.DATABASE_URL),
+      database,
       ai: Boolean(process.env.OPENAI_API_KEY),
       linkedIn: Boolean(process.env.LINKEDIN_CLIENT_ID),
       x: Boolean(process.env.X_CLIENT_ID),

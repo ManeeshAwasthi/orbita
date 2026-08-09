@@ -76,6 +76,8 @@ export function OrbitaApp() {
   const [memory, setMemory] = useState<MemoryEntry[]>(() => readPersistedState().memory);
   const [assistantOpen, setAssistantOpen] = useState(true);
   const [onboarded, setOnboarded] = useState(() => readPersistedState().onboarded);
+  const [remoteStateLoaded, setRemoteStateLoaded] = useState(false);
+  const [dataMode, setDataMode] = useState<"browser" | "database" | "syncing">("browser");
 
   useEffect(() => {
     const nextState: PersistedState = {
@@ -88,6 +90,65 @@ export function OrbitaApp() {
     };
     window.localStorage.setItem(storageKey, JSON.stringify(nextState));
   }, [theme, contents, campaigns, people, memory, onboarded]);
+
+  useEffect(() => {
+    if (!isAuthed) return;
+
+    let cancelled = false;
+
+    fetch("/api/state")
+      .then((response) => response.json())
+      .then((payload: { mode?: "browser" | "database"; state?: PersistedState | null }) => {
+        if (cancelled) return;
+        if (payload.mode === "database") setDataMode("database");
+        if (payload.state) {
+          setTheme(payload.state.theme);
+          setContents(payload.state.contents);
+          setCampaigns(payload.state.campaigns);
+          setPeople(payload.state.people);
+          setMemory(payload.state.memory);
+          setOnboarded(payload.state.onboarded);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setDataMode("browser");
+      })
+      .finally(() => {
+        if (!cancelled) setRemoteStateLoaded(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthed]);
+
+  useEffect(() => {
+    if (!isAuthed || !remoteStateLoaded) return;
+
+    const nextState: PersistedState = {
+      theme,
+      contents,
+      campaigns,
+      people,
+      memory,
+      onboarded,
+    };
+
+    const timeout = window.setTimeout(() => {
+      fetch("/api/state", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextState),
+      })
+        .then((response) => response.json())
+        .then((payload: { mode?: "browser" | "database"; saved?: boolean }) => {
+          setDataMode(payload.mode === "database" && payload.saved ? "database" : "browser");
+        })
+        .catch(() => setDataMode("browser"));
+    }, 650);
+
+    return () => window.clearTimeout(timeout);
+  }, [isAuthed, remoteStateLoaded, theme, contents, campaigns, people, memory, onboarded]);
 
   const dark = theme === "dark";
   const greeting = useMemo(() => {
@@ -263,6 +324,7 @@ export function OrbitaApp() {
               {active === "Memory" ? <MemorySection memory={memory} setMemory={setMemory} /> : null}
               {active === "Settings" ? (
                 <SettingsSection
+                  dataMode={dataMode}
                   exportData={() => exportDemoData({ theme, contents, campaigns, people, memory, onboarded })}
                   resetData={() => {
                     window.localStorage.removeItem(storageKey);
@@ -592,7 +654,15 @@ function MemorySection({ memory, setMemory }: { memory: MemoryEntry[]; setMemory
   );
 }
 
-function SettingsSection({ exportData, resetData }: { exportData: () => void; resetData: () => void }) {
+function SettingsSection({
+  dataMode,
+  exportData,
+  resetData,
+}: {
+  dataMode: "browser" | "database" | "syncing";
+  exportData: () => void;
+  resetData: () => void;
+}) {
   return (
     <div className="space-y-5">
       <SectionTitle title="Settings" subtitle="Profile, voice, AI, platforms, privacy, data controls, and system health." />
@@ -605,7 +675,7 @@ function SettingsSection({ exportData, resetData }: { exportData: () => void; re
         </Panel>
         <Panel title="System health" icon={Activity}>
           <StatusRow label="AI provider" value={process.env.NEXT_PUBLIC_DEMO_MODE === "false" ? "Configured" : "Demo adapter"} />
-          <StatusRow label="Database" value="Demo browser state" />
+          <StatusRow label="Database" value={dataMode === "database" ? "Connected" : dataMode === "syncing" ? "Syncing" : "Browser fallback"} />
           <StatusRow label="Average task time" value="0.8s demo" />
           <StatusRow label="Failed operations" value="0 today" />
         </Panel>
