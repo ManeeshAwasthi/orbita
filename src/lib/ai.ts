@@ -113,6 +113,94 @@ function geminiModel() {
   return process.env.GEMINI_MODEL || "gemini-3.6-flash";
 }
 
+function normalizeScore(value: number) {
+  const percentage = value <= 1 ? value * 100 : value;
+  return Math.max(0, Math.min(100, Math.round(percentage)));
+}
+
+function normalizeContentItem(item: ContentItem): ContentItem {
+  return {
+    ...item,
+    voiceMatch: normalizeScore(item.voiceMatch),
+    confidence: normalizeScore(item.confidence),
+  };
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function readString(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : fallback;
+}
+
+function readNumber(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function readStringArray(value: unknown, fallback: string[]) {
+  if (!Array.isArray(value)) return fallback;
+  const items = value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  return items.length > 0 ? items : fallback;
+}
+
+function readPlatform(value: unknown, fallback: Platform): Platform {
+  return value === "LinkedIn" || value === "X" || value === "Reddit" ? value : fallback;
+}
+
+function readObjective(value: unknown, fallback: Objective): Objective {
+  return objectiveEnum.find((objective) => objective.toLowerCase() === String(value).toLowerCase()) ?? fallback;
+}
+
+function readStatus(value: unknown, fallback: ContentItem["status"]): ContentItem["status"] {
+  return value === "Draft" || value === "Awaiting approval" || value === "Scheduled" || value === "Published" ? value : fallback;
+}
+
+function parseContentItem(value: unknown, fallback: ContentItem): ContentItem {
+  const parsed = contentItemSchema.safeParse(value);
+  if (parsed.success) return normalizeContentItem(parsed.data);
+
+  const record = asRecord(value);
+  return normalizeContentItem({
+    id: readString(record.id, fallback.id),
+    platform: readPlatform(record.platform, fallback.platform),
+    title: readString(record.title, fallback.title),
+    body: readString(record.body, fallback.body),
+    objective: readObjective(record.objective, fallback.objective),
+    audience: readString(record.audience, fallback.audience),
+    status: readStatus(record.status, fallback.status),
+    voiceMatch: readNumber(record.voiceMatch, fallback.voiceMatch),
+    confidence: readNumber(record.confidence, fallback.confidence),
+    recommendation: readString(record.recommendation, fallback.recommendation),
+    warnings: readStringArray(record.warnings, fallback.warnings),
+  });
+}
+
+function parseCommandPlan(value: unknown, fallback: CommandPlan): CommandPlan {
+  const parsed = commandPlanSchema.safeParse(value);
+  if (parsed.success) {
+    return {
+      ...parsed.data,
+      draft: parsed.data.draft ? normalizeContentItem(parsed.data.draft) : undefined,
+    };
+  }
+
+  const record = asRecord(value);
+  const platforms = Array.isArray(record.platforms)
+    ? record.platforms.filter((platform): platform is Platform => platform === "LinkedIn" || platform === "X" || platform === "Reddit")
+    : fallback.platforms;
+
+  return {
+    intent: readString(record.intent, fallback.intent),
+    platforms: platforms.length > 0 ? platforms : fallback.platforms,
+    topic: readString(record.topic, fallback.topic),
+    audience: readString(record.audience, fallback.audience),
+    objective: readObjective(record.objective, fallback.objective),
+    recommendedActions: readStringArray(record.recommendedActions, fallback.recommendedActions),
+    draft: record.draft && fallback.draft ? parseContentItem(record.draft, fallback.draft) : fallback.draft,
+  };
+}
+
 export async function createAiCommandPlan(command: string): Promise<{ mode: AiMode; plan: CommandPlan }> {
   const fallback = createCommandPlan(command);
   const selectedProvider = provider();
@@ -133,7 +221,7 @@ export async function createAiCommandPlan(command: string): Promise<{ mode: AiMo
         },
       });
 
-      const parsed = commandPlanSchema.parse(JSON.parse(response.text ?? "{}"));
+      const parsed = parseCommandPlan(JSON.parse(response.text ?? "{}"), fallback);
       return { mode: "gemini", plan: { ...parsed, draft: parsed.draft ? { ...parsed.draft, id: `gemini-${Date.now()}` } : undefined } };
     } catch {
       return { mode: "demo", plan: fallback };
@@ -169,7 +257,7 @@ export async function createAiCommandPlan(command: string): Promise<{ mode: AiMo
       },
     });
 
-    const parsed = commandPlanSchema.parse(JSON.parse(response.output_text));
+    const parsed = parseCommandPlan(JSON.parse(response.output_text), fallback);
     return { mode: "openai", plan: { ...parsed, draft: parsed.draft ? { ...parsed.draft, id: `openai-${Date.now()}` } : undefined } };
   } catch {
     return { mode: "demo", plan: fallback };
@@ -201,7 +289,7 @@ export async function createAiDraft(input: {
         },
       });
 
-      const parsed = contentItemSchema.parse(JSON.parse(response.text ?? "{}"));
+      const parsed = parseContentItem(JSON.parse(response.text ?? "{}"), fallback);
       return { mode: "gemini", draft: { ...parsed, id: `gemini-${Date.now()}` } };
     } catch {
       return { mode: "demo", draft: fallback };
@@ -237,7 +325,7 @@ export async function createAiDraft(input: {
       },
     });
 
-    const parsed = contentItemSchema.parse(JSON.parse(response.output_text));
+    const parsed = parseContentItem(JSON.parse(response.output_text), fallback);
     return { mode: "openai", draft: { ...parsed, id: `openai-${Date.now()}` } };
   } catch {
     return { mode: "demo", draft: fallback };
