@@ -96,11 +96,9 @@ export function OrbitaApp() {
 
   function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    finishLogin();
-  }
-
-  function finishLogin() {
-    if (accessCode.trim().length > 0) setIsAuthed(true);
+    const formData = new FormData(event.currentTarget);
+    const submittedCode = String(formData.get("accessCode") ?? accessCode);
+    if (submittedCode.trim().length > 0) setIsAuthed(true);
   }
 
   function runCommand() {
@@ -164,12 +162,12 @@ export function OrbitaApp() {
                 value={accessCode}
                 onChange={(event) => setAccessCode(event.target.value)}
                 onInput={(event) => setAccessCode(event.currentTarget.value)}
+                name="accessCode"
                 className="mt-6 h-12 w-full rounded-md border border-current/15 bg-transparent px-4 outline-none focus:border-current/40"
                 placeholder="Access code"
               />
               <button
                 type="submit"
-                onClick={finishLogin}
                 className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-md bg-[#20201d] px-4 text-sm font-medium text-white dark:bg-[#f6f3ed] dark:text-[#111]"
               >
                 Enter Orbita
