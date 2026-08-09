@@ -49,6 +49,9 @@ const sections = [
 ] as const;
 
 type Section = (typeof sections)[number]["id"];
+const primaryButtonClass =
+  "rounded-md bg-[#f6f3ed] text-[#111111] shadow-sm ring-1 ring-white/10 transition hover:bg-white dark:bg-[#f6f3ed] dark:text-[#111111] dark:hover:bg-white";
+
 type PersistedState = {
   theme: "light" | "dark";
   contents: ContentItem[];
@@ -156,7 +159,7 @@ export function OrbitaApp() {
               <Lock className="mb-6 size-7" />
               <h2 className="text-2xl font-semibold">Sign in</h2>
               <p className="mt-2 text-sm opacity-70">
-                Use any access code in local demo mode. In production, set `ORBITA_ACCESS_CODE`.
+                Use any access code in local demo mode. In production, set a private access code.
               </p>
               <input
                 value={accessCode}
@@ -185,7 +188,7 @@ export function OrbitaApp() {
       <div className="flex min-h-screen">
         <aside className="hidden w-64 shrink-0 border-r border-current/10 px-4 py-5 lg:block">
           <div className="mb-8 flex items-center gap-3 px-2">
-            <div className="grid size-9 place-items-center rounded-md bg-current text-sm font-bold text-white dark:text-black">O</div>
+            <div className="grid size-9 place-items-center rounded-md bg-[#f6f3ed] text-sm font-bold text-[#111111] shadow-sm ring-1 ring-white/10">O</div>
             <div>
               <div className="font-semibold">Orbita</div>
               <div className="text-xs opacity-55">Presence OS</div>
@@ -292,7 +295,7 @@ function Onboarding({ onComplete }: { onComplete: () => void }) {
             Current defaults: AI, strategy, geopolitics, research, economics, thoughtful networking, assisted approvals, and no generic AI writing.
           </p>
         </div>
-        <button onClick={onComplete} className="h-11 rounded-md bg-current px-4 text-sm font-medium text-white dark:text-black">
+        <button onClick={onComplete} className={`h-11 px-4 text-sm font-medium ${primaryButtonClass}`}>
           Use these defaults
         </button>
       </div>
@@ -328,7 +331,7 @@ function HomeSection(props: {
               <span>Reddit</span>
               <span>Assisted mode</span>
             </div>
-            <button onClick={props.runCommand} className="flex h-11 items-center gap-2 rounded-md bg-current px-4 text-sm font-medium text-white dark:text-black">
+            <button onClick={props.runCommand} className={`flex h-11 items-center gap-2 px-4 text-sm font-medium ${primaryButtonClass}`}>
               <Sparkles className="size-4" />
               Ask Orbita
             </button>
@@ -435,7 +438,7 @@ function CreateSection({ contents, createContent, approveContent }: { contents: 
                     <button key={action} className="h-8 rounded-md border border-current/10 px-2 text-xs">{action}</button>
                   ))}
                 </div>
-                <button onClick={() => approveContent(item.id)} className="h-10 w-full rounded-md bg-current text-sm font-medium text-white dark:text-black">
+                <button onClick={() => approveContent(item.id)} className={`h-10 w-full text-sm font-medium ${primaryButtonClass}`}>
                   Approve
                 </button>
               </div>
@@ -467,7 +470,7 @@ function CampaignsSection({ campaigns, setCampaigns }: { campaigns: Campaign[]; 
   return (
     <div className="space-y-5">
       <SectionTitle title="Campaigns" subtitle="Temporary strategic objectives that guide content, discovery, and relationship recommendations." />
-      <button onClick={addCampaign} className="h-10 rounded-md bg-current px-4 text-sm font-medium text-white dark:text-black">Create 21-day campaign</button>
+      <button onClick={addCampaign} className={`h-10 px-4 text-sm font-medium ${primaryButtonClass}`}>Create 21-day campaign</button>
       <div className="grid gap-4">
         {campaigns.map((campaign) => (
           <Panel key={campaign.id} title={campaign.name} icon={CalendarDays}>
@@ -633,7 +636,7 @@ function AssistantPanel({ command, setCommand, runCommand }: { command: string; 
           onChange={(event) => setCommand(event.target.value)}
           className="min-h-44 w-full resize-none rounded-md border border-current/10 bg-transparent p-3 text-sm leading-6 outline-none"
         />
-        <button onClick={runCommand} className="mt-3 h-10 w-full rounded-md bg-current text-sm font-medium text-white dark:text-black">
+        <button onClick={runCommand} className={`mt-3 h-10 w-full text-sm font-medium ${primaryButtonClass}`}>
           Generate plan
         </button>
         <div className="mt-5 rounded-md border border-current/10 p-3 text-sm leading-6 opacity-75">
