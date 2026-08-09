@@ -281,7 +281,9 @@ export function OrbitaApp() {
                   </button>
                 ))}
               </div>
-              <div className="hidden text-sm opacity-70 lg:block">Demo data is isolated from live integrations</div>
+              <div className="hidden text-sm opacity-70 lg:block">
+                {dataMode === "database" ? "Database connected; social integrations are manual" : "Demo data is isolated from live integrations"}
+              </div>
               <div className="flex items-center gap-2">
                 <button
                   title="Toggle theme"
@@ -682,7 +684,9 @@ function SettingsSection({
       </div>
       <Panel title="Data controls" icon={Database}>
         <p className="text-sm leading-6 opacity-75">
-          Demo mode stores your working state in this browser only. Production will move this to Postgres with export and deletion flows.
+          {dataMode === "database"
+            ? "Orbita is saving your working state to Postgres. Browser storage remains a local fallback."
+            : "Demo mode stores your working state in this browser only. Production will move this to Postgres with export and deletion flows."}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button onClick={exportData} className="h-10 rounded-md border border-current/15 px-4 text-sm">Export demo data</button>
