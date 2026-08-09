@@ -6,10 +6,12 @@ Orbita is a Vercel-oriented Next.js application using TypeScript, React, Tailwin
 
 - Interface: responsive command-center UI in `src/components/orbita-app.tsx`.
 - Domain logic: strategist, writer fallback, platform detection, and analytics helpers in `src/lib/orbita-engine.ts`.
-- Data: demo seed data in `src/lib/demo-data.ts`; future production data should move to Postgres through a repository layer.
+- Data: demo seed data in `src/lib/demo-data.ts`; browser-local demo persistence in the client; future production data should move to Postgres through a repository layer.
 - API: route handlers in `src/app/api`.
 
 ## Future Database Tables
+
+The initial migration lives at `db/migrations/001_initial_schema.sql`.
 
 - `users`
 - `profiles`

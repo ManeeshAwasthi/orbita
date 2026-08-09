@@ -16,6 +16,7 @@ This MVP is built as a responsive Next.js app for Vercel. It currently runs in d
 - Inspectable and editable memory.
 - Analytics dashboard with opportunity yield.
 - Settings with integration health and manual/assisted mode.
+- Browser-local demo persistence with export/reset controls.
 - API routes for assistant plans, content drafts, auth, and health.
 - Unit tests for core Orbita decision logic.
 
@@ -49,7 +50,7 @@ Copy `.env.example` to `.env.local` for local development. Do not commit `.env.l
 
 ## Database Setup
 
-The MVP runs without a database using isolated demo/browser state. Production should use managed Postgres on Vercel-compatible infrastructure. Planned tables include users, profiles, platform accounts, campaigns, content items, content versions, publishing jobs, people, relationships, interactions, topics, opportunities, analytics events, analytics snapshots, memories, preferences, experiments, research sources, system metrics, and audit logs.
+The MVP runs without a database using isolated browser-local demo state. A production Postgres baseline is included at `db/migrations/001_initial_schema.sql`, covering users, profiles, platform accounts, campaigns, content items, content versions, publishing jobs, people, relationships, interactions, topics, opportunities, analytics events, analytics snapshots, memories, preferences, experiments, research sources, system metrics, and audit logs.
 
 ## Deployment
 

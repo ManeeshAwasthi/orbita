@@ -24,7 +24,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import type React from "react";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   demoAnalytics,
   demoCampaigns,
@@ -49,20 +49,42 @@ const sections = [
 ] as const;
 
 type Section = (typeof sections)[number]["id"];
+type PersistedState = {
+  theme: "light" | "dark";
+  contents: ContentItem[];
+  campaigns: Campaign[];
+  people: Person[];
+  memory: MemoryEntry[];
+  onboarded: boolean;
+};
+
+const storageKey = "orbita-demo-state-v1";
 
 export function OrbitaApp() {
   const [isAuthed, setIsAuthed] = useState(false);
   const [accessCode, setAccessCode] = useState("");
   const [active, setActive] = useState<Section>("Home");
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<"light" | "dark">(() => readPersistedState().theme);
   const [command, setCommand] = useState("I want to write something about India's AI policy today and reach young policy researchers.");
   const [plan, setPlan] = useState<CommandPlan | null>(null);
-  const [contents, setContents] = useState<ContentItem[]>(demoContent);
-  const [campaigns, setCampaigns] = useState<Campaign[]>(demoCampaigns);
-  const [people, setPeople] = useState<Person[]>(demoPeople);
-  const [memory, setMemory] = useState<MemoryEntry[]>(demoMemory);
+  const [contents, setContents] = useState<ContentItem[]>(() => readPersistedState().contents);
+  const [campaigns, setCampaigns] = useState<Campaign[]>(() => readPersistedState().campaigns);
+  const [people, setPeople] = useState<Person[]>(() => readPersistedState().people);
+  const [memory, setMemory] = useState<MemoryEntry[]>(() => readPersistedState().memory);
   const [assistantOpen, setAssistantOpen] = useState(true);
-  const [onboarded, setOnboarded] = useState(false);
+  const [onboarded, setOnboarded] = useState(() => readPersistedState().onboarded);
+
+  useEffect(() => {
+    const nextState: PersistedState = {
+      theme,
+      contents,
+      campaigns,
+      people,
+      memory,
+      onboarded,
+    };
+    window.localStorage.setItem(storageKey, JSON.stringify(nextState));
+  }, [theme, contents, campaigns, people, memory, onboarded]);
 
   const dark = theme === "dark";
   const greeting = useMemo(() => {
@@ -238,7 +260,20 @@ export function OrbitaApp() {
               {active === "Network" ? <NetworkSection people={people} /> : null}
               {active === "Analytics" ? <AnalyticsSection /> : null}
               {active === "Memory" ? <MemorySection memory={memory} setMemory={setMemory} /> : null}
-              {active === "Settings" ? <SettingsSection /> : null}
+              {active === "Settings" ? (
+                <SettingsSection
+                  exportData={() => exportDemoData({ theme, contents, campaigns, people, memory, onboarded })}
+                  resetData={() => {
+                    window.localStorage.removeItem(storageKey);
+                    setTheme("dark");
+                    setContents(demoContent);
+                    setCampaigns(demoCampaigns);
+                    setPeople(demoPeople);
+                    setMemory(demoMemory);
+                    setOnboarded(false);
+                  }}
+                />
+              ) : null}
             </div>
             {assistantOpen ? <AssistantPanel command={command} setCommand={setCommand} runCommand={runCommand} /> : null}
           </div>
@@ -556,7 +591,7 @@ function MemorySection({ memory, setMemory }: { memory: MemoryEntry[]; setMemory
   );
 }
 
-function SettingsSection() {
+function SettingsSection({ exportData, resetData }: { exportData: () => void; resetData: () => void }) {
   return (
     <div className="space-y-5">
       <SectionTitle title="Settings" subtitle="Profile, voice, AI, platforms, privacy, data controls, and system health." />
@@ -574,6 +609,15 @@ function SettingsSection() {
           <StatusRow label="Failed operations" value="0 today" />
         </Panel>
       </div>
+      <Panel title="Data controls" icon={Database}>
+        <p className="text-sm leading-6 opacity-75">
+          Demo mode stores your working state in this browser only. Production will move this to Postgres with export and deletion flows.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button onClick={exportData} className="h-10 rounded-md border border-current/15 px-4 text-sm">Export demo data</button>
+          <button onClick={resetData} className="h-10 rounded-md border border-current/15 px-4 text-sm">Reset demo data</button>
+        </div>
+      </Panel>
     </div>
   );
 }
@@ -639,4 +683,45 @@ function Metric({ label, value }: { label: string; value: string | number }) {
       <div className="mt-1 text-xs uppercase opacity-55">{label}</div>
     </div>
   );
+}
+
+function exportDemoData(state: PersistedState) {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `orbita-demo-export-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function readPersistedState(): PersistedState {
+  const fallback: PersistedState = {
+    theme: "dark",
+    contents: demoContent,
+    campaigns: demoCampaigns,
+    people: demoPeople,
+    memory: demoMemory,
+    onboarded: false,
+  };
+
+  if (typeof window === "undefined") return fallback;
+
+  try {
+    const saved = window.localStorage.getItem(storageKey);
+    if (!saved) return fallback;
+    const parsed = JSON.parse(saved) as Partial<PersistedState>;
+
+    return {
+      theme: parsed.theme === "light" || parsed.theme === "dark" ? parsed.theme : fallback.theme,
+      contents: Array.isArray(parsed.contents) ? parsed.contents : fallback.contents,
+      campaigns: Array.isArray(parsed.campaigns) ? parsed.campaigns : fallback.campaigns,
+      people: Array.isArray(parsed.people) ? parsed.people : fallback.people,
+      memory: Array.isArray(parsed.memory) ? parsed.memory : fallback.memory,
+      onboarded: typeof parsed.onboarded === "boolean" ? parsed.onboarded : fallback.onboarded,
+    };
+  } catch {
+    window.localStorage.removeItem(storageKey);
+    return fallback;
+  }
 }
