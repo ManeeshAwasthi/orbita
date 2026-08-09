@@ -42,8 +42,11 @@ Copy `.env.example` to `.env.local` for local development. Do not commit `.env.l
 
 - `ORBITA_ACCESS_CODE`: private app access code.
 - `DATABASE_URL`: managed Postgres connection string.
-- `OPENAI_API_KEY`: AI generation and reasoning.
-- `OPENAI_MODEL`: model used for AI generation. Defaults to `gpt-5-mini`.
+- `AI_PROVIDER`: `gemini` or `openai`. Defaults to Gemini when `GEMINI_API_KEY` exists.
+- `GEMINI_API_KEY`: Gemini API key for AI generation.
+- `GEMINI_MODEL`: Gemini model. Defaults to `gemini-2.5-flash`.
+- `OPENAI_API_KEY`: optional OpenAI fallback for AI generation and reasoning.
+- `OPENAI_MODEL`: OpenAI model. Defaults to `gpt-5-mini`.
 - `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET`: future official LinkedIn integration.
 - `X_CLIENT_ID` / `X_CLIENT_SECRET`: future official X integration.
 - `REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET`: future Reddit integration.
@@ -61,7 +64,7 @@ Required before production deployment:
 
 1. Add `ORBITA_ACCESS_CODE`.
 2. Add `DATABASE_URL` when persistent multi-session data is required.
-3. Add `OPENAI_API_KEY` when live AI generation is enabled.
+3. Add `GEMINI_API_KEY` or `OPENAI_API_KEY` when live AI generation is enabled.
 4. Connect GitHub repository to Vercel.
 
 ## Testing
@@ -84,7 +87,7 @@ npm run build
 ## Known Limitations
 
 - Demo state is not yet persisted to Postgres.
-- Live OpenAI generation is not connected yet.
+- Live AI generation needs `GEMINI_API_KEY` or `OPENAI_API_KEY`.
 - LinkedIn, X, and Reddit are manual/assisted placeholders until official API setup.
 - Vercel deployment and private GitHub repository creation require connected credentials.
 
@@ -92,7 +95,7 @@ npm run build
 
 1. Add Postgres schema and migrations.
 2. Replace demo auth with production auth provider or hardened single-user auth.
-3. Add OpenAI-backed strategist/writer/research abstractions with structured outputs.
+3. Expand AI-backed strategist/writer/research abstractions with structured outputs.
 4. Persist campaigns, content, people, memory, analytics, and audit logs.
 5. Add official platform connectors where permitted.
 6. Add Playwright end-to-end tests for login, onboarding, content, campaign, network, memory, and analytics.

@@ -17,7 +17,8 @@ export async function GET() {
     demoMode: !database,
     integrations: {
       database,
-      ai: Boolean(process.env.OPENAI_API_KEY),
+      ai: Boolean(process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY),
+      aiProvider: process.env.GEMINI_API_KEY ? "gemini" : process.env.OPENAI_API_KEY ? "openai" : "demo",
       linkedIn: Boolean(process.env.LINKEDIN_CLIENT_ID),
       x: Boolean(process.env.X_CLIENT_ID),
       reddit: Boolean(process.env.REDDIT_CLIENT_ID),
