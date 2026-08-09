@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { generateDraft } from "@/lib/orbita-engine";
+import { createAiDraft } from "@/lib/ai";
 
 const contentSchema = z.object({
   platform: z.enum(["LinkedIn", "X", "Reddit"]),
@@ -30,8 +30,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({
-    mode: process.env.OPENAI_API_KEY ? "ai-ready" : "demo-writer",
-    draft: generateDraft(parsed.data),
-  });
+  const result = await createAiDraft(parsed.data);
+  return NextResponse.json(result);
 }

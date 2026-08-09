@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createCommandPlan } from "@/lib/orbita-engine";
+import { createAiCommandPlan } from "@/lib/ai";
 
 const requestSchema = z.object({
   command: z.string().trim().min(3).max(1200),
@@ -17,8 +17,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({
-    mode: process.env.OPENAI_API_KEY ? "ai-ready" : "demo-strategist",
-    plan: createCommandPlan(parsed.data.command),
-  });
+  const result = await createAiCommandPlan(parsed.data.command);
+  return NextResponse.json(result);
 }

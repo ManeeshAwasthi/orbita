@@ -78,6 +78,7 @@ export function OrbitaApp() {
   const [onboarded, setOnboarded] = useState(() => readPersistedState().onboarded);
   const [remoteStateLoaded, setRemoteStateLoaded] = useState(false);
   const [dataMode, setDataMode] = useState<"browser" | "database" | "syncing">("browser");
+  const [aiMode, setAiMode] = useState<"demo" | "ai" | "thinking">("demo");
 
   useEffect(() => {
     const nextState: PersistedState = {
@@ -165,20 +166,48 @@ export function OrbitaApp() {
     if (submittedCode.trim().length > 0) setIsAuthed(true);
   }
 
-  function runCommand() {
-    const nextPlan = createCommandPlan(command);
-    setPlan(nextPlan);
-    if (nextPlan.draft) setContents((items) => [nextPlan.draft!, ...items]);
+  async function runCommand() {
+    setAiMode("thinking");
+    try {
+      const response = await fetch("/api/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command }),
+      });
+      const payload = (await response.json()) as { mode?: "ai" | "demo"; plan?: CommandPlan };
+      const nextPlan = payload.plan ?? createCommandPlan(command);
+      setPlan(nextPlan);
+      setAiMode(payload.mode === "ai" ? "ai" : "demo");
+      if (nextPlan.draft) setContents((items) => [nextPlan.draft!, ...items]);
+    } catch {
+      const nextPlan = createCommandPlan(command);
+      setPlan(nextPlan);
+      setAiMode("demo");
+      if (nextPlan.draft) setContents((items) => [nextPlan.draft!, ...items]);
+    }
   }
 
-  function createContent(platform: Platform) {
-    const draft = generateDraft({
+  async function createContent(platform: Platform) {
+    const request = {
       platform,
       topic: "AI policy and public institutions",
       audience: "Young policy researchers",
-      objective: "Credibility",
-    });
-    setContents((items) => [draft, ...items]);
+      objective: "Credibility" as const,
+    };
+    setAiMode("thinking");
+    try {
+      const response = await fetch("/api/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+      });
+      const payload = (await response.json()) as { mode?: "ai" | "demo"; draft?: ContentItem };
+      setContents((items) => [payload.draft ?? generateDraft(request), ...items]);
+      setAiMode(payload.mode === "ai" ? "ai" : "demo");
+    } catch {
+      setContents((items) => [generateDraft(request), ...items]);
+      setAiMode("demo");
+    }
     setActive("Create");
   }
 
@@ -337,6 +366,7 @@ export function OrbitaApp() {
                     setMemory(demoMemory);
                     setOnboarded(false);
                   }}
+                  aiMode={aiMode}
                 />
               ) : null}
             </div>
@@ -658,10 +688,12 @@ function MemorySection({ memory, setMemory }: { memory: MemoryEntry[]; setMemory
 
 function SettingsSection({
   dataMode,
+  aiMode,
   exportData,
   resetData,
 }: {
   dataMode: "browser" | "database" | "syncing";
+  aiMode: "demo" | "ai" | "thinking";
   exportData: () => void;
   resetData: () => void;
 }) {
@@ -676,7 +708,7 @@ function SettingsSection({
           <p className="mt-3 text-sm opacity-70">Official API connectors can be added later. Orbita will not bypass platform protections.</p>
         </Panel>
         <Panel title="System health" icon={Activity}>
-          <StatusRow label="AI provider" value={process.env.NEXT_PUBLIC_DEMO_MODE === "false" ? "Configured" : "Demo adapter"} />
+          <StatusRow label="AI provider" value={aiMode === "ai" ? "OpenAI connected" : aiMode === "thinking" ? "Working" : "Demo adapter"} />
           <StatusRow label="Database" value={dataMode === "database" ? "Connected" : dataMode === "syncing" ? "Syncing" : "Browser fallback"} />
           <StatusRow label="Average task time" value="0.8s demo" />
           <StatusRow label="Failed operations" value="0 today" />

@@ -43,6 +43,7 @@ Copy `.env.example` to `.env.local` for local development. Do not commit `.env.l
 - `ORBITA_ACCESS_CODE`: private app access code.
 - `DATABASE_URL`: managed Postgres connection string.
 - `OPENAI_API_KEY`: AI generation and reasoning.
+- `OPENAI_MODEL`: model used for AI generation. Defaults to `gpt-5-mini`.
 - `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET`: future official LinkedIn integration.
 - `X_CLIENT_ID` / `X_CLIENT_SECRET`: future official X integration.
 - `REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET`: future Reddit integration.
