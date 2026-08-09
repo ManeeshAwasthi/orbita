@@ -44,7 +44,7 @@ Copy `.env.example` to `.env.local` for local development. Do not commit `.env.l
 - `DATABASE_URL`: managed Postgres connection string.
 - `AI_PROVIDER`: `gemini` or `openai`. Defaults to Gemini when `GEMINI_API_KEY` exists.
 - `GEMINI_API_KEY`: Gemini API key for AI generation.
-- `GEMINI_MODEL`: Gemini model. Defaults to `gemini-2.5-flash`.
+- `GEMINI_MODEL`: Gemini model. Defaults to `gemini-3.6-flash`.
 - `OPENAI_API_KEY`: optional OpenAI fallback for AI generation and reasoning.
 - `OPENAI_MODEL`: OpenAI model. Defaults to `gpt-5-mini`.
 - `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET`: future official LinkedIn integration.

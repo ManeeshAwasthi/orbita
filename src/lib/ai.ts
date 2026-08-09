@@ -110,7 +110,7 @@ function openAiModel() {
 }
 
 function geminiModel() {
-  return process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  return process.env.GEMINI_MODEL || "gemini-3.6-flash";
 }
 
 export async function createAiCommandPlan(command: string): Promise<{ mode: AiMode; plan: CommandPlan }> {
